@@ -1,6 +1,7 @@
 #include "Configuration.h"
 
 #include <cstdio>
+#include <cmath>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
@@ -100,6 +101,51 @@ void TestFailedSavePreservesExistingFile()
 //---------------------------------------------------------------------------------------------------------------------------------//
 
 
+void TestInvalidSettingsAreRejected()
+{
+    const std::string path = "build/invalid-configuration.bin";
+
+    Configuration negativeMinimum;
+    negativeMinimum.SetMinimumScroll(-1);
+    Check(!negativeMinimum.IsValid(), "negative minimum movement is invalid");
+    Check(!negativeMinimum.Save(path), "negative minimum movement is not saved");
+
+    Configuration invalidCommand;
+    invalidCommand.SetButtonCommand(0, "KEY_");
+    Check(!invalidCommand.IsValid(), "malformed command invalidates configuration");
+    Check(!invalidCommand.Save(path), "malformed command is not saved");
+
+    Configuration invalidFactor;
+    invalidFactor.SetWheelFactors(0, std::nanf(""), 1.0F);
+    Check(!invalidFactor.IsValid(), "non-finite wheel factor is invalid");
+    Check(!invalidFactor.Save(path), "non-finite wheel factor is not saved");
+
+    std::remove(path.c_str());
+}
+//---------------------------------------------------------------------------------------------------------------------------------//
+
+
+void TestInvalidFileDoesNotChangeConfiguration()
+{
+    const std::string path = "build/invalid-loaded-configuration.bin";
+    Configuration saved;
+    Check(saved.Save(path), "save configuration before corruption");
+    {
+        std::fstream stream(path, std::ios::binary | std::ios::in | std::ios::out);
+        const std::int32_t invalidMinimum = -1;
+        stream.seekp(4);
+        stream.write(reinterpret_cast<const char*>(&invalidMinimum), sizeof(invalidMinimum));
+    }
+
+    Configuration loaded;
+    loaded.SetMinimumScroll(77);
+    Check(!loaded.Load(path), "reject invalid loaded values");
+    Check(loaded.MinimumScroll() == 77, "invalid file preserves active configuration");
+    std::remove(path.c_str());
+}
+//---------------------------------------------------------------------------------------------------------------------------------//
+
+
 void TestTruncatedFileDoesNotChangeConfiguration()
 {
     const std::string path = "build/truncated-configuration.bin";
@@ -125,6 +171,8 @@ int main()
     TestButtonDownIndices();
     TestLegacyRoundTrip();
     TestFailedSavePreservesExistingFile();
+    TestInvalidSettingsAreRejected();
+    TestInvalidFileDoesNotChangeConfiguration();
     TestTruncatedFileDoesNotChangeConfiguration();
 
     std::cout << "All configuration tests passed.\n";

@@ -21,6 +21,7 @@ public:
 
     bool Load(const std::string& path);
     bool Save(const std::string& path) const;
+    bool IsValid() const;
 
     std::int32_t MinimumScroll() const;
     void SetMinimumScroll(std::int32_t minimumScroll);

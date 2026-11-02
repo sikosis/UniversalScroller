@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdio>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
@@ -140,6 +141,9 @@ bool Configuration::Load(const std::string& path)
         loaded.fScrollWhenMouseDown[index] = value != 0;
     }
 
+    if (!loaded.IsValid()) {
+        return false;
+    }
     *this = std::move(loaded);
     return true;
 }
@@ -148,6 +152,9 @@ bool Configuration::Load(const std::string& path)
 
 bool Configuration::Save(const std::string& path) const
 {
+    if (!IsValid()) {
+        return false;
+    }
     const std::string temporaryPath = path + ".tmp." + std::to_string(getpid());
     if (!WriteFile(temporaryPath)) {
         std::remove(temporaryPath.c_str());
@@ -157,6 +164,31 @@ bool Configuration::Save(const std::string& path) const
         || std::rename(temporaryPath.c_str(), path.c_str()) != 0) {
         std::remove(temporaryPath.c_str());
         return false;
+    }
+    return true;
+}
+//---------------------------------------------------------------------------------------------------------------------------------//
+
+
+bool Configuration::IsValid() const
+{
+    if (fMinimumScroll < 0) {
+        return false;
+    }
+    for (std::int32_t speed : fDoubleClickSpeed) {
+        if (speed <= 0) {
+            return false;
+        }
+    }
+    for (const Command& command : fButtonCommands) {
+        if (!command.IsValid()) {
+            return false;
+        }
+    }
+    for (std::size_t index = 0; index < kSpeedCount; ++index) {
+        if (!std::isfinite(fWheelFactorsX[index]) || !std::isfinite(fWheelFactorsY[index])) {
+            return false;
+        }
     }
     return true;
 }

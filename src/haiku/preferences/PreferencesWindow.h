@@ -8,6 +8,7 @@
 #include <array>
 
 class BCheckBox;
+class BPopUpMenu;
 class BTextControl;
 
 class PreferencesWindow : public BWindow {
@@ -20,6 +21,8 @@ public:
 private:
     void BuildInterface();
     void LoadControls();
+    void LoadSelectedAction();
+    void StoreSelectedAction();
     bool SaveControls();
 
     Configuration fConfiguration;
@@ -28,8 +31,10 @@ private:
     std::array<BTextControl*, Configuration::kSpeedCount> fWheelX {};
     std::array<BTextControl*, Configuration::kSpeedCount> fWheelY {};
     BCheckBox* fUseWheelFactors = nullptr;
-    std::array<BTextControl*, Configuration::kButtonCommandCount> fCommands {};
-    std::array<BCheckBox*, Configuration::kButtonCommandCount> fSwallowClicks {};
+    BPopUpMenu* fActionMenu = nullptr;
+    BTextControl* fCommand = nullptr;
+    BCheckBox* fSwallowClick = nullptr;
+    std::size_t fSelectedAction = 0;
     BCheckBox* fRestartInputServer = nullptr;
 };
 
