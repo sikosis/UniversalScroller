@@ -4,9 +4,13 @@ CXXFLAGS ?= -std=c++17 -Wall -Wextra -Wpedantic -Werror
 BUILD_DIRECTORY := build
 TEST_BINARIES := $(BUILD_DIRECTORY)/command_test $(BUILD_DIRECTORY)/configuration_test
 
-.PHONY: all clean test
+.PHONY: all clean haiku test
 
 all: test
+
+haiku:
+	$(MAKE) -C src/haiku/filter
+	$(MAKE) -C src/haiku/preferences
 
 $(BUILD_DIRECTORY)/command_test: src/Command.cpp src/Command.h tests/CommandTest.cpp
 	mkdir -p $(BUILD_DIRECTORY)

@@ -9,10 +9,9 @@ new code should not depend on it at build time.
 
 ## Current status
 
-The rewrite is in progress. The command parser and configuration storage have
-been migrated and include host-runnable unit tests. Existing version-1 settings
-files remain compatible. The Haiku input filter and preferences application
-still need to be migrated.
+The command parser, configuration storage, Haiku input filter, and preferences
+application have been migrated to C++17. Existing version-1 settings files
+remain compatible.
 
 ## Development
 
@@ -22,8 +21,15 @@ Run the portable tests on any system with a C++17 compiler:
 make test
 ```
 
-The Haiku application build will be added as the platform components are
-migrated.
+On Haiku, build the input-server filter and preferences application with:
+
+```sh
+make haiku
+```
+
+The filter supports mouse-movement scrolling, shifted horizontal wheel input,
+normal and fast wheel factors, remapped clicks, key commands, clipboard
+commands, and executable commands. Hold the Option key to bypass augmentation.
 
 ## Original project
 
