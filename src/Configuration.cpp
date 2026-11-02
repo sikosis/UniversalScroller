@@ -2,11 +2,14 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <limits>
+#include <sys/stat.h>
 #include <type_traits>
+#include <unistd.h>
 #include <utility>
 
 namespace {
@@ -145,6 +148,23 @@ bool Configuration::Load(const std::string& path)
 
 bool Configuration::Save(const std::string& path) const
 {
+    const std::string temporaryPath = path + ".tmp." + std::to_string(getpid());
+    if (!WriteFile(temporaryPath)) {
+        std::remove(temporaryPath.c_str());
+        return false;
+    }
+    if (chmod(temporaryPath.c_str(), S_IRUSR | S_IWUSR) != 0
+        || std::rename(temporaryPath.c_str(), path.c_str()) != 0) {
+        std::remove(temporaryPath.c_str());
+        return false;
+    }
+    return true;
+}
+//---------------------------------------------------------------------------------------------------------------------------------//
+
+
+bool Configuration::WriteFile(const std::string& path) const
+{
     std::ofstream stream(path, std::ios::binary | std::ios::trunc);
     if (!stream.is_open() || !WriteValue(stream, kConfigurationVersion)
         || !WriteValue(stream, fMinimumScroll)) {
@@ -189,6 +209,11 @@ bool Configuration::Save(const std::string& path) const
             return false;
         }
     }
+    stream.flush();
+    if (!stream.good()) {
+        return false;
+    }
+    stream.close();
     return stream.good();
 }
 //---------------------------------------------------------------------------------------------------------------------------------//

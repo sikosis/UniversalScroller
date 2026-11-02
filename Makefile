@@ -38,7 +38,7 @@ test: $(TEST_BINARIES)
 	$(BUILD_DIRECTORY)/click_tracker_test
 
 clean:
-	rm -f $(TEST_BINARIES) $(BUILD_DIRECTORY)/configuration-test.bin $(BUILD_DIRECTORY)/truncated-configuration.bin
+	rm -f $(TEST_BINARIES) $(BUILD_DIRECTORY)/configuration-test.bin $(BUILD_DIRECTORY)/preserved-configuration.bin $(BUILD_DIRECTORY)/truncated-configuration.bin
 	rmdir $(BUILD_DIRECTORY) 2>/dev/null || true
 
 ifeq ($(shell uname -s),Haiku)

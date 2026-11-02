@@ -39,6 +39,8 @@ public:
     void SetScrollWhenMouseDown(std::size_t buttons, bool scroll);
 
 private:
+    bool WriteFile(const std::string& path) const;
+
     std::int32_t fMinimumScroll = 0;
     std::array<std::int32_t, 3> fDoubleClickSpeed {250000, 250000, 250000};
     std::array<Command, kButtonCommandCount> fButtonCommands;
