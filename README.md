@@ -9,9 +9,10 @@ new code should not depend on it at build time.
 
 ## Current status
 
-The rewrite is in progress. The command parser is the first migrated component
-and includes host-runnable unit tests. The Haiku input filter and preferences
-application still need to be migrated.
+The rewrite is in progress. The command parser and configuration storage have
+been migrated and include host-runnable unit tests. Existing version-1 settings
+files remain compatible. The Haiku input filter and preferences application
+still need to be migrated.
 
 ## Development
 
