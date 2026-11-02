@@ -43,6 +43,23 @@ int32 LaunchCommandThread(void* data)
 //---------------------------------------------------------------------------------------------------------------------------------//
 
 
+std::size_t ButtonIndex(MouseButton button)
+{
+    switch (button) {
+        case MouseButton::primary:
+            return 0;
+        case MouseButton::secondary:
+            return 1;
+        case MouseButton::tertiary:
+            return 2;
+        case MouseButton::none:
+            return 0;
+    }
+    return 0;
+}
+//---------------------------------------------------------------------------------------------------------------------------------//
+
+
 } // namespace
 
 UniversalScroller::UniversalScroller()
@@ -73,6 +90,8 @@ filter_result UniversalScroller::Filter(BMessage* message, BList* outList)
             }
             if ((fModifiers & B_OPTION_KEY) != 0) {
                 fPhysicalButtons = 0;
+                fVirtualButtons = 0;
+                fClickTracker.Reset();
             }
             return B_DISPATCH_MESSAGE;
         }
@@ -80,13 +99,8 @@ filter_result UniversalScroller::Filter(BMessage* message, BList* outList)
         case B_MOUSE_DOWN:
             return HandleMouseDown(message, outList);
 
-        case B_MOUSE_UP: {
-            int32 buttons = 0;
-            if (message->FindInt32("buttons", &buttons) == B_OK) {
-                fPhysicalButtons = static_cast<std::uint32_t>(buttons);
-            }
-            return B_DISPATCH_MESSAGE;
-        }
+        case B_MOUSE_UP:
+            return HandleMouseUp(message);
 
         case B_MOUSE_MOVED:
             return HandleMouseMoved(message);
@@ -113,31 +127,52 @@ filter_result UniversalScroller::HandleMouseDown(BMessage* message, BList* outLi
         fModifiers = static_cast<std::uint32_t>(modifiers);
     }
 
+    const std::uint32_t previousButtons = fPhysicalButtons;
     const std::uint32_t currentButtons = static_cast<std::uint32_t>(buttons);
-    const int commandIndex = Configuration::ButtonDownIndex(fPhysicalButtons, currentButtons);
+    const int commandIndex = Configuration::ButtonDownIndex(previousButtons, currentButtons);
     fPhysicalButtons = currentButtons;
     if ((fModifiers & B_OPTION_KEY) != 0 || commandIndex < 0) {
+        fVirtualButtons = currentButtons;
         return B_DISPATCH_MESSAGE;
     }
 
     const std::size_t index = static_cast<std::size_t>(commandIndex);
     const Command& command = fConfiguration.ButtonCommand(index);
-    AddCommandMessage(command, *message, outList);
-
     if (command.Kind() == CommandKind::button) {
         const int32 mappedButtons = ButtonMask(command.Button());
-        if (fConfiguration.SwallowClick(index)) {
-            BMessage* mappedMessage = new BMessage(*message);
-            mappedMessage->ReplaceInt32("buttons", mappedButtons);
-            mappedMessage->ReplaceInt32("clicks", static_cast<int32>(command.ClickCount()));
-            outList->AddItem(mappedMessage);
-        } else {
-            message->ReplaceInt32("buttons", mappedButtons);
-            message->ReplaceInt32("clicks", static_cast<int32>(command.ClickCount()));
+        const std::uint32_t newlyPressedButtons = currentButtons & ~previousButtons;
+        const bool canDispatchDirectly = command.ClickCount() == 1
+            && static_cast<std::uint32_t>(mappedButtons) == newlyPressedButtons
+            && !fConfiguration.SwallowClick(index);
+        if (canDispatchDirectly) {
+            fVirtualButtons = previousButtons | static_cast<std::uint32_t>(mappedButtons);
+            message->ReplaceInt32("buttons", static_cast<int32>(fVirtualButtons));
+            return B_DISPATCH_MESSAGE;
         }
+
+        AddButtonMessages(command, *message, previousButtons, outList);
+    } else {
+        AddCommandMessage(command, *message, outList);
     }
 
     return fConfiguration.SwallowClick(index) ? B_SKIP_MESSAGE : B_DISPATCH_MESSAGE;
+}
+//---------------------------------------------------------------------------------------------------------------------------------//
+
+
+filter_result UniversalScroller::HandleMouseUp(BMessage* message)
+{
+    int32 buttons = 0;
+    if (message->FindInt32("buttons", &buttons) != B_OK) {
+        return B_DISPATCH_MESSAGE;
+    }
+
+    fPhysicalButtons = static_cast<std::uint32_t>(buttons);
+    if (fVirtualButtons != fPhysicalButtons) {
+        message->ReplaceInt32("buttons", buttons);
+        fVirtualButtons = fPhysicalButtons;
+    }
+    return B_DISPATCH_MESSAGE;
 }
 //---------------------------------------------------------------------------------------------------------------------------------//
 
@@ -235,6 +270,30 @@ void UniversalScroller::AddCommandMessage(const Command& command, const BMessage
     source.FindInt64("when", &when);
     commandMessage->AddInt64("when", when);
     outList->AddItem(commandMessage);
+}
+//---------------------------------------------------------------------------------------------------------------------------------//
+
+
+void UniversalScroller::AddButtonMessages(const Command& command, const BMessage& source,
+    std::uint32_t baseButtons, BList* outList)
+{
+    int64 when = system_time();
+    source.FindInt64("when", &when);
+    const std::size_t buttonIndex = ButtonIndex(command.Button());
+    const std::vector<ClickEvent> events = fClickTracker.BuildSequence(command.Button(),
+        command.ClickCount(), when, fConfiguration.DoubleClickSpeed(buttonIndex));
+    const std::uint32_t mappedButton = static_cast<std::uint32_t>(ButtonMask(command.Button()));
+
+    for (const ClickEvent& event : events) {
+        BMessage* clickMessage = new BMessage(source);
+        clickMessage->what = event.down ? B_MOUSE_DOWN : B_MOUSE_UP;
+        const std::uint32_t buttons = event.down ? baseButtons | mappedButton : baseButtons;
+        clickMessage->ReplaceInt32("buttons", static_cast<int32>(buttons));
+        clickMessage->ReplaceInt32("clicks", static_cast<int32>(event.clickCount));
+        clickMessage->ReplaceInt64("when", when++);
+        outList->AddItem(clickMessage);
+    }
+    fVirtualButtons = baseButtons | mappedButton;
 }
 //---------------------------------------------------------------------------------------------------------------------------------//
 

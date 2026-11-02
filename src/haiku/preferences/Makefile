@@ -18,10 +18,12 @@ all: default
 DEVEL_DIRECTORY := $(shell findpaths -r makefile_engine B_FIND_PATH_DEVELOP_DIRECTORY)
 include $(DEVEL_DIRECTORY)/etc/makefile-engine
 
-install: default
+.PHONY: user-install user-uninstall
+
+user-install: default
 	mkdir -p $(INSTALL_DIRECTORY)
 	cp $(TARGET) $(INSTALL_DIRECTORY)/UniversalScrollerPreferences
 
-uninstall:
+user-uninstall:
 	rm -f $(INSTALL_DIRECTORY)/UniversalScrollerPreferences
 	rmdir $(INSTALL_DIRECTORY) 2>/dev/null || true

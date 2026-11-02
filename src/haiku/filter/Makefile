@@ -1,6 +1,6 @@
 NAME = UniversalScroller
 TYPE = SHARED
-SRCS = UniversalScroller.cpp FilterEntry.cpp ../../Command.cpp ../../Configuration.cpp
+SRCS = UniversalScroller.cpp FilterEntry.cpp ../../ClickTracker.cpp ../../Command.cpp ../../Configuration.cpp
 RSRCS =
 LIBS = _APP_ be
 LOCAL_INCLUDE_PATHS = ../.. 
@@ -18,17 +18,16 @@ all: _APP_ default
 DEVEL_DIRECTORY := $(shell findpaths -r makefile_engine B_FIND_PATH_DEVELOP_DIRECTORY)
 include $(DEVEL_DIRECTORY)/etc/makefile-engine
 
-clean:
-	rm -f _APP_
+.PHONY: user-install user-uninstall
 
 $(TARGET): _APP_
 
 _APP_: /system/servers/input_server
 	ln -s $< $@
 
-install: default
+user-install: default
 	mkdir -p $(INSTALL_DIRECTORY)
 	cp $(TARGET) $(INSTALL_DIRECTORY)/UniversalScroller
 
-uninstall:
+user-uninstall:
 	rm -f $(INSTALL_DIRECTORY)/UniversalScroller
