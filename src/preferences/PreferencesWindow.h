@@ -9,6 +9,7 @@
 
 class BCheckBox;
 class BPopUpMenu;
+class BStringView;
 class BTextControl;
 
 class PreferencesWindow : public BWindow {
@@ -23,6 +24,7 @@ private:
     void LoadControls();
     void LoadSelectedAction();
     void StoreSelectedAction();
+    void SetStatus(const char* status);
     bool SaveControls();
 
     Configuration fConfiguration;
@@ -35,7 +37,7 @@ private:
     BTextControl* fCommand = nullptr;
     BCheckBox* fSwallowClick = nullptr;
     std::size_t fSelectedAction = 0;
-    BCheckBox* fRestartInputServer = nullptr;
+    BStringView* fStatus = nullptr;
 };
 
 #endif

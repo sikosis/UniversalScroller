@@ -28,6 +28,8 @@ private:
     void AddCommandMessage(const Command& command, const BMessage& source, BList* outList);
     void AddKeyMessages(const Command& command, const BMessage& source, BList* outList);
     void LaunchCommand(const std::string& command);
+    void ReloadConfigurationIfNeeded();
+    void ReleaseVirtualButtons(BList* outList);
 
     Configuration fConfiguration;
     ClickTracker fClickTracker;
@@ -35,6 +37,10 @@ private:
     std::uint32_t fVirtualButtons = 0;
     std::uint32_t fModifiers = 0;
     BPoint fButtonDownPosition;
+    BPoint fPointerPosition;
+    std::uint64_t fConfigurationNode = 0;
+    std::int64_t fConfigurationModifiedTime = 0;
+    std::int64_t fNextConfigurationCheck = 0;
 };
 
 #endif

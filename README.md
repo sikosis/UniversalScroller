@@ -54,7 +54,8 @@ The existing settings file is retained when removing the application:
 make uninstall
 ```
 
-The filter supports mouse-movement scrolling, shifted horizontal wheel input,
+The filter reloads settings automatically after Apply, without restarting the
+input server. It supports mouse-movement scrolling, shifted horizontal wheel input,
 normal and fast wheel factors, remapped clicks, key commands, clipboard
 commands, and executable commands. Hold the Option key to bypass augmentation.
 

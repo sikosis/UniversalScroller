@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <memory>
 #include <sstream>
+#include <sys/stat.h>
 #include <utility>
 #include <vector>
 
@@ -77,6 +78,11 @@ std::string Uppercase(std::string value)
 UniversalScroller::UniversalScroller()
 {
     fConfiguration.Load(Configuration::DefaultPath());
+    struct stat status {};
+    if (stat(Configuration::DefaultPath().c_str(), &status) == 0) {
+        fConfigurationNode = static_cast<std::uint64_t>(status.st_ino);
+        fConfigurationModifiedTime = static_cast<std::int64_t>(status.st_mtime);
+    }
 }
 //---------------------------------------------------------------------------------------------------------------------------------//
 
@@ -90,6 +96,7 @@ status_t UniversalScroller::InitCheck()
 
 filter_result UniversalScroller::Filter(BMessage* message, BList* outList)
 {
+    ReloadConfigurationIfNeeded();
     if (message == nullptr || outList == nullptr) {
         return B_DISPATCH_MESSAGE;
     }
@@ -101,8 +108,8 @@ filter_result UniversalScroller::Filter(BMessage* message, BList* outList)
                 fModifiers = static_cast<std::uint32_t>(modifiers);
             }
             if ((fModifiers & B_OPTION_KEY) != 0) {
+                ReleaseVirtualButtons(outList);
                 fPhysicalButtons = 0;
-                fVirtualButtons = 0;
                 fClickTracker.Reset();
             }
             return B_DISPATCH_MESSAGE;
@@ -127,10 +134,41 @@ filter_result UniversalScroller::Filter(BMessage* message, BList* outList)
 //---------------------------------------------------------------------------------------------------------------------------------//
 
 
+void UniversalScroller::ReloadConfigurationIfNeeded()
+{
+    const std::int64_t now = system_time();
+    if (now < fNextConfigurationCheck) {
+        return;
+    }
+    fNextConfigurationCheck = now + 1000000;
+
+    struct stat status {};
+    const std::string path = Configuration::DefaultPath();
+    if (stat(path.c_str(), &status) != 0) {
+        return;
+    }
+    const std::uint64_t node = static_cast<std::uint64_t>(status.st_ino);
+    const std::int64_t modifiedTime = static_cast<std::int64_t>(status.st_mtime);
+    if (node == fConfigurationNode && modifiedTime == fConfigurationModifiedTime) {
+        return;
+    }
+
+    Configuration updated;
+    if (updated.Load(path)) {
+        fConfiguration = std::move(updated);
+        fConfigurationNode = node;
+        fConfigurationModifiedTime = modifiedTime;
+        fClickTracker.Reset();
+    }
+}
+//---------------------------------------------------------------------------------------------------------------------------------//
+
+
 filter_result UniversalScroller::HandleMouseDown(BMessage* message, BList* outList)
 {
     int32 buttons = 0;
     message->FindPoint("where", &fButtonDownPosition);
+    fPointerPosition = fButtonDownPosition;
     if (message->FindInt32("buttons", &buttons) != B_OK) {
         return B_DISPATCH_MESSAGE;
     }
@@ -178,6 +216,7 @@ filter_result UniversalScroller::HandleMouseUp(BMessage* message)
     if (message->FindInt32("buttons", &buttons) != B_OK) {
         return B_DISPATCH_MESSAGE;
     }
+    message->FindPoint("where", &fPointerPosition);
 
     fPhysicalButtons = static_cast<std::uint32_t>(buttons);
     if (fVirtualButtons != fPhysicalButtons) {
@@ -201,6 +240,7 @@ filter_result UniversalScroller::HandleMouseMoved(BMessage* message)
         || message->FindPoint("where", &position) != B_OK) {
         return B_DISPATCH_MESSAGE;
     }
+    fPointerPosition = position;
 
     const std::size_t combination = static_cast<std::uint32_t>(buttons) & kMouseButtonMask;
     if (!fConfiguration.ScrollWhenMouseDown(combination)) {
@@ -224,6 +264,7 @@ filter_result UniversalScroller::HandleMouseMoved(BMessage* message)
     message->RemoveName("be:wheel_delta_y");
     message->AddFloat("be:wheel_delta_x", deltaX);
     message->AddFloat("be:wheel_delta_y", deltaY);
+    fButtonDownPosition = position;
     return B_DISPATCH_MESSAGE;
 }
 //---------------------------------------------------------------------------------------------------------------------------------//
@@ -402,6 +443,23 @@ void UniversalScroller::LaunchCommand(const std::string& command)
         copy.release();
         resume_thread(thread);
     }
+}
+//---------------------------------------------------------------------------------------------------------------------------------//
+
+
+void UniversalScroller::ReleaseVirtualButtons(BList* outList)
+{
+    if (fVirtualButtons == 0) {
+        return;
+    }
+
+    BMessage* release = new BMessage(B_MOUSE_UP);
+    release->AddInt64("when", system_time());
+    release->AddPoint("where", fPointerPosition);
+    release->AddInt32("modifiers", static_cast<int32>(fModifiers));
+    release->AddInt32("buttons", 0);
+    outList->AddItem(release);
+    fVirtualButtons = 0;
 }
 //---------------------------------------------------------------------------------------------------------------------------------//
 

@@ -27,6 +27,7 @@ namespace {
 
 constexpr uint32 kSaveMessage = 'save';
 constexpr uint32 kDefaultsMessage = 'dflt';
+constexpr uint32 kRevertMessage = 'rvrt';
 constexpr uint32 kSelectActionMessage = 'slac';
 constexpr uint32 kPrimaryMessage = 'prmy';
 constexpr uint32 kPrimaryDoubleMessage = 'prmd';
@@ -166,21 +167,19 @@ void PreferencesWindow::BuildInterface()
     tabs->AddTab(commands);
 
     BButton* defaults = new BButton(nullptr, "Defaults", new BMessage(kDefaultsMessage));
-    BButton* save = new BButton(nullptr, "Save", new BMessage(kSaveMessage));
-    fRestartInputServer = new BCheckBox(nullptr, "Restart input server after saving", nullptr);
-    fRestartInputServer->SetValue(B_CONTROL_ON);
-    save->MakeDefault(true);
+    BButton* revert = new BButton(nullptr, "Revert", new BMessage(kRevertMessage));
+    BButton* apply = new BButton(nullptr, "Apply", new BMessage(kSaveMessage));
+    fStatus = new BStringView(nullptr, "Ready");
+    apply->MakeDefault(true);
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
         .Add(tabs)
         .AddGroup(B_HORIZONTAL, B_USE_DEFAULT_SPACING)
-            .SetInsets(B_USE_WINDOW_SPACING, 0)
-            .Add(fRestartInputServer)
-        .End()
-        .AddGroup(B_HORIZONTAL, B_USE_DEFAULT_SPACING)
             .SetInsets(B_USE_WINDOW_SPACING)
-            .Add(defaults)
+            .Add(fStatus)
             .AddGlue()
-            .Add(save)
+            .Add(defaults)
+            .Add(revert)
+            .Add(apply)
         .End();
 }
 //---------------------------------------------------------------------------------------------------------------------------------//
@@ -228,6 +227,13 @@ void PreferencesWindow::StoreSelectedAction()
 //---------------------------------------------------------------------------------------------------------------------------------//
 
 
+void PreferencesWindow::SetStatus(const char* status)
+{
+    fStatus->SetText(status);
+}
+//---------------------------------------------------------------------------------------------------------------------------------//
+
+
 bool PreferencesWindow::SaveControls()
 {
     StoreSelectedAction();
@@ -269,6 +275,7 @@ bool PreferencesWindow::SaveControls()
         return false;
     }
     fConfiguration = updated;
+    SetStatus("Settings applied");
     return true;
 }
 //---------------------------------------------------------------------------------------------------------------------------------//
@@ -278,20 +285,26 @@ void PreferencesWindow::MessageReceived(BMessage* message)
 {
     switch (message->what) {
         case kSaveMessage:
-            if (SaveControls()) {
-                if (fRestartInputServer->Value() == B_CONTROL_ON) {
-                    std::system("/system/servers/input_server -q");
-                } else {
-                    (new BAlert("Settings saved",
-                        "Restart the input server when you are ready to reload the filter.", "OK"))->Go();
-                }
-            }
+            SaveControls();
             break;
         case kDefaultsMessage:
             fConfiguration = Configuration();
             fSelectedAction = 0;
             LoadControls();
+            SetStatus("Defaults loaded — Apply to save");
             break;
+        case kRevertMessage: {
+            Configuration saved;
+            if (saved.Load(Configuration::DefaultPath())) {
+                fConfiguration = saved;
+                fSelectedAction = 0;
+                LoadControls();
+                SetStatus("Reverted to the saved settings");
+            } else {
+                (new BAlert("Revert failed", "The saved settings could not be loaded.", "OK"))->Go();
+            }
+            break;
+        }
         case kSelectActionMessage: {
             int32 index = 0;
             if (message->FindInt32("index", &index) == B_OK && index >= 0
