@@ -21,10 +21,10 @@ Run the portable tests on any system with a C++17 compiler:
 make test
 ```
 
-On Haiku, build the input-server filter and preferences application with:
+Build the input-server filter and preferences application with:
 
 ```sh
-make haiku
+make
 ```
 
 The filter supports mouse-movement scrolling, shifted horizontal wheel input,
