@@ -122,9 +122,15 @@ void PreferencesWindow::BuildInterface()
 
     BButton* defaults = new BButton(nullptr, "Defaults", new BMessage(kDefaultsMessage));
     BButton* save = new BButton(nullptr, "Save", new BMessage(kSaveMessage));
+    fRestartInputServer = new BCheckBox(nullptr, "Restart input server after saving", nullptr);
+    fRestartInputServer->SetValue(B_CONTROL_ON);
     save->MakeDefault(true);
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
         .Add(tabs)
+        .AddGroup(B_HORIZONTAL, B_USE_DEFAULT_SPACING)
+            .SetInsets(B_USE_WINDOW_SPACING, 0)
+            .Add(fRestartInputServer)
+        .End()
         .AddGroup(B_HORIZONTAL, B_USE_DEFAULT_SPACING)
             .SetInsets(B_USE_WINDOW_SPACING)
             .Add(defaults)
@@ -206,8 +212,12 @@ void PreferencesWindow::MessageReceived(BMessage* message)
     switch (message->what) {
         case kSaveMessage:
             if (SaveControls()) {
-                (new BAlert("Settings saved",
-                    "Settings were saved. Restart the input server to reload the filter.", "OK"))->Go();
+                if (fRestartInputServer->Value() == B_CONTROL_ON) {
+                    std::system("/system/servers/input_server -q");
+                } else {
+                    (new BAlert("Settings saved",
+                        "Restart the input server when you are ready to reload the filter.", "OK"))->Go();
+                }
             }
             break;
         case kDefaultsMessage:

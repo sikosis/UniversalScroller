@@ -27,6 +27,22 @@ Build the input-server filter and preferences application with:
 make
 ```
 
+Install the resulting filter and preferences application for the current user:
+
+```sh
+make install
+```
+
+This copies them under `/boot/home/config/non-packaged`, then restarts the input
+server. Launch the preferences application from
+`/boot/home/config/non-packaged/apps/UniversalScroller`.
+
+The existing settings file is retained when removing the application:
+
+```sh
+make uninstall
+```
+
 The filter supports mouse-movement scrolling, shifted horizontal wheel input,
 normal and fast wheel factors, remapped clicks, key commands, clipboard
 commands, and executable commands. Hold the Option key to bypass augmentation.

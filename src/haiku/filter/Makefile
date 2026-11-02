@@ -11,6 +11,7 @@ SYMBOLS =
 DEBUGGER =
 COMPILER_FLAGS = -std=c++17
 LINKER_FLAGS =
+INSTALL_DIRECTORY = /boot/home/config/non-packaged/add-ons/input_server/filters
 
 all: _APP_ default
 
@@ -24,3 +25,10 @@ $(TARGET): _APP_
 
 _APP_: /system/servers/input_server
 	ln -s $< $@
+
+install: default
+	mkdir -p $(INSTALL_DIRECTORY)
+	cp $(TARGET) $(INSTALL_DIRECTORY)/UniversalScroller
+
+uninstall:
+	rm -f $(INSTALL_DIRECTORY)/UniversalScroller

@@ -30,6 +30,7 @@ private:
     BCheckBox* fUseWheelFactors = nullptr;
     std::array<BTextControl*, Configuration::kButtonCommandCount> fCommands {};
     std::array<BCheckBox*, Configuration::kButtonCommandCount> fSwallowClicks {};
+    BCheckBox* fRestartInputServer = nullptr;
 };
 
 #endif
