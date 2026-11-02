@@ -27,6 +27,17 @@ Build the input-server filter and preferences application with:
 make
 ```
 
+The runnable outputs are placed in `build`:
+
+- `build/UniversalScrollerPreferences` — preferences application
+- `build/UniversalScroller` — input-server filter
+
+Launch Preferences directly after building with:
+
+```sh
+make run
+```
+
 Install the resulting filter and preferences application for the current user:
 
 ```sh
