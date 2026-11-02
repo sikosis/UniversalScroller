@@ -5,6 +5,7 @@
 #include <string>
 
 enum class CommandKind {
+    invalid,
     button,
     key,
     cut,
@@ -28,6 +29,7 @@ public:
     MouseButton Button() const;
     unsigned int ClickCount() const;
     const std::string& Text() const;
+    bool IsValid() const;
 
 private:
     void Parse();

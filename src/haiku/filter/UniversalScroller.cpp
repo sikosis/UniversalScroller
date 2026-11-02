@@ -7,6 +7,7 @@
 #include <View.h>
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdlib>
 #include <memory>
@@ -56,6 +57,17 @@ std::size_t ButtonIndex(MouseButton button)
             return 0;
     }
     return 0;
+}
+//---------------------------------------------------------------------------------------------------------------------------------//
+
+
+std::string Uppercase(std::string value)
+{
+    std::transform(value.begin(), value.end(), value.begin(),
+        [](unsigned char character) {
+            return static_cast<char>(std::toupper(character));
+        });
+    return value;
 }
 //---------------------------------------------------------------------------------------------------------------------------------//
 
@@ -246,6 +258,8 @@ void UniversalScroller::AddCommandMessage(const Command& command, const BMessage
 {
     uint32 what = 0;
     switch (command.Kind()) {
+        case CommandKind::invalid:
+            return;
         case CommandKind::cut:
             what = 'CCUT';
             break;
@@ -306,18 +320,19 @@ void UniversalScroller::AddKeyMessages(const Command& command, const BMessage& s
     while (std::getline(parser, part, '_')) {
         parts.push_back(part);
     }
-    if (parts.size() < 5 || parts[0] != "KEY") {
+    if (parts.size() < 5 || Uppercase(parts[0]) != "KEY") {
         return;
     }
 
     std::size_t index = 1;
     int32 modifiers = 0;
     while (index < parts.size()) {
-        if (parts[index] == "SHIFT") {
+        const std::string modifier = Uppercase(parts[index]);
+        if (modifier == "SHIFT") {
             modifiers |= B_SHIFT_KEY;
-        } else if (parts[index] == "OPTION") {
+        } else if (modifier == "OPTION") {
             modifiers |= B_OPTION_KEY;
-        } else if (parts[index] == "CONTROL") {
+        } else if (modifier == "CONTROL") {
             modifiers |= B_CONTROL_KEY;
         } else {
             break;

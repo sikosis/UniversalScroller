@@ -47,6 +47,19 @@ The filter supports mouse-movement scrolling, shifted horizontal wheel input,
 normal and fast wheel factors, remapped clicks, key commands, clipboard
 commands, and executable commands. Hold the Option key to bypass augmentation.
 
+### Command values
+
+- `PRIMARY_MOUSE_BUTTON`, `SECONDARY_MOUSE_BUTTON`, or
+  `TERTIARY_MOUSE_BUTTON` remaps a click. Add `_DOUBLE` for a double click or a
+  positive numeric suffix for repeated clicks.
+- `SYSMSG_CUT`, `SYSMSG_COPY`, and `SYSMSG_PASTE` send clipboard commands.
+- Key commands use
+  `KEY_[SHIFT_][OPTION_][CONTROL_]key_raw-character_byte-count_[bytes_]text`.
+- Other non-empty values are launched as executable commands.
+
+Malformed values using a reserved `KEY_`, `SYSMSG_`, or mouse-button prefix are
+rejected by Preferences and are never executed.
+
 ## Original project
 
 The original project was written by Christian Aistleitner and contributors.

@@ -194,6 +194,12 @@ bool PreferencesWindow::SaveControls()
 
     for (std::size_t index = 0; index < Configuration::kButtonCommandCount; ++index) {
         updated.SetButtonCommand(index, fCommands[index]->Text());
+        if (!updated.ButtonCommand(index).IsValid()) {
+            BString message;
+            message.SetToFormat("The command for ‘%s’ is invalid.", kCommandLabels[index]);
+            (new BAlert("Invalid command", message.String(), "OK"))->Go();
+            return false;
+        }
         updated.SetSwallowClick(index, fSwallowClicks[index]->Value() == B_CONTROL_ON);
     }
 
